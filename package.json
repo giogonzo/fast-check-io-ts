@@ -1,0 +1,60 @@
+{
+  "name": "fast-check-io-ts",
+  "version": "0.0.0",
+  "description": "io-ts codec to fast-check arbitrary mapping",
+  "files": [
+    "lib"
+  ],
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/giogonzo/fast-check-io-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/giogonzo/fast-check-io-ts/issues"
+  },
+  "homepage": "https://github.com/giogonzo/fast-check-io-ts",
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "npm run clean && tsc",
+    "test": "npm run lint && npm run prettier-check && jest",
+    "prettier-write": "prettier --write \"./{src,test}/**/*.ts\"",
+    "prettier-check": "prettier --list-different \"./{src,test}/**/*.ts\"",
+    "docs": "docs-ts",
+    "preversion": "npm run test && npm run docs",
+    "prepublish": "npm run build",
+    "lint": "tslint -p tsconfig.json src/*.ts"
+  },
+  "keywords": [
+    "fast-check",
+    "io-ts",
+    "typescript",
+    "arbitrary",
+    "generative",
+    "testing"
+  ],
+  "author": "Giovanni Gonzaga <giovanni@buildo.io>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^24.0.17",
+    "docs-ts": "^0.2.1",
+    "fast-check": "^1.16.0",
+    "fp-ts": "^2.0.3",
+    "io-ts": "^2.0.1",
+    "jest": "^24.8.0",
+    "prettier": "^1.18.2",
+    "rimraf": "^2.6.3",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.18.0",
+    "typescript": "^3.5.3"
+  },
+  "peerDependencies": {
+    "fast-check": "^1.16.0",
+    "io-ts": "^2.0.0",
+    "fp-ts": "^2.0.0"
+  },
+  "jest": {
+    "preset": "ts-jest"
+  }
+}
