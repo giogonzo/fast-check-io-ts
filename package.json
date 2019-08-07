@@ -21,8 +21,7 @@
     "test": "npm run lint && npm run prettier-check && jest",
     "prettier-write": "prettier --write \"./{src,test}/**/*.ts\"",
     "prettier-check": "prettier --list-different \"./{src,test}/**/*.ts\"",
-    "docs": "docs-ts",
-    "preversion": "npm run test && npm run docs",
+    "preversion": "npm run test",
     "prepublish": "npm run build",
     "lint": "tslint -p tsconfig.json src/*.ts"
   },
@@ -38,7 +37,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^24.0.17",
-    "docs-ts": "^0.2.1",
     "fast-check": "^1.16.0",
     "fp-ts": "^2.0.3",
     "io-ts": "^2.0.1",
