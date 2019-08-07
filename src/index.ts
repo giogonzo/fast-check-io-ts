@@ -18,7 +18,10 @@ export type SupportedType =
   | t.InterfaceType<unknown>
   | t.PartialType<unknown>
   | t.UnionType<Array<any>>
-  | t.RefinementType<t.Any>;
+  | t.RefinementType<t.Any>
+  | t.IntersectionType<Array<t.Any>>;
+
+const objectTypes = ['ExactType', 'InterfaceType', 'PartialType'];
 
 export function getArbitrary<T extends t.Mixed>(codec: T): fc.Arbitrary<T['_A']> {
   const type: SupportedType = codec as any;
@@ -57,6 +60,13 @@ export function getArbitrary<T extends t.Mixed>(codec: T): fc.Arbitrary<T['_A']>
       return getArbitrary(type.type);
     case 'RefinementType':
       return getArbitrary(type.type).filter(type.predicate);
+    case 'IntersectionType':
+      const isObjectIntersection = objectTypes.includes((type.types[0] as any)._tag as SupportedType['_tag']);
+      return isObjectIntersection
+        ? (fc.tuple as any)(...type.types.map(getArbitrary))
+            .map((values: Array<object>) => Object.assign({}, ...values))
+            .filter(type.is)
+        : fc.oneof(...type.types.map(getArbitrary)).filter(type.is);
   }
 
   throw new Error(`Codec not supported: ${codec}`);

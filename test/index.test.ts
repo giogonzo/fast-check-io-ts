@@ -22,3 +22,7 @@ test(t.array(t.type({ foo: t.string })));
 test(t.tuple([t.string, t.number, t.type({ foo: t.boolean })]));
 // @ts-ignore
 test(t.keyof({ foo: null, bar: null }));
+test(t.intersection([t.Int, t.number]));
+test(t.intersection([t.type({ foo: t.string }), t.partial({ bar: t.number })]));
+test(t.intersection([t.type({ foo: t.string }), t.type({ bar: t.number })]));
+test(t.intersection([t.array(t.string), t.array(t.number)]));
