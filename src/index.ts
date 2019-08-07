@@ -8,7 +8,6 @@ export type SupportedType =
   | t.ArrayType<any>
   | t.BooleanType
   | t.ExactType<any>
-  | t.IntersectionType<Array<any>>
   | t.KeyofType<any>
   | t.NullType
   | t.TupleType<Array<t.Any>>
@@ -42,8 +41,6 @@ export function getArbitrary<T extends t.Mixed>(codec: T): fc.Arbitrary<T['_A']>
       );
     case 'UnionType':
       return fc.oneof(...type.types.map(getArbitrary));
-    case 'IntersectionType':
-      throw new Error(`Codec not supported: ${codec}`);
     case 'KeyofType':
       return fc.oneof(...Object.keys(type.keys).map(fc.constant));
     case 'NullType':
