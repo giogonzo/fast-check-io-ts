@@ -18,12 +18,14 @@
   "scripts": {
     "clean": "rimraf lib",
     "build": "npm run clean && tsc",
-    "test": "npm run lint && npm run prettier-check && jest",
+    "jest": "jest",
+    "test": "npm run lint && npm run prettier-check && npm run dtslint && npm run jest",
     "prettier-write": "prettier --write \"./{src,test}/**/*.ts\"",
     "prettier-check": "prettier --list-different \"./{src,test}/**/*.ts\"",
     "preversion": "npm run test",
     "prepublish": "npm run build",
-    "lint": "tslint -p tsconfig.json src/*.ts"
+    "lint": "tslint -p tsconfig.json src/*.ts",
+    "dtslint": "dtslint dtslint"
   },
   "keywords": [
     "fast-check",
@@ -38,6 +40,7 @@
   "devDependencies": {
     "@types/jest": "^24.0.17",
     "@types/node": "^12.7.0",
+    "dtslint": "github:gcanti/dtslint",
     "fast-check": "^1.16.0",
     "fp-ts": "^2.0.3",
     "io-ts": "^2.0.1",

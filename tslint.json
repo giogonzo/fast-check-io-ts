@@ -8,6 +8,7 @@
     "trailing-comma": false,
     "arrow-parens": false,
     "no-shadowed-variable": false,
-    "ordered-imports": false
+    "ordered-imports": false,
+    "interface-name": false
   }
 }

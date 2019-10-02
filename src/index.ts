@@ -1,86 +1,89 @@
 import * as fc from 'fast-check';
-import * as O from 'fp-ts/lib/Option';
-import { pipe } from 'fp-ts/lib/pipeable';
-import * as R from 'fp-ts/lib/Record';
+import { record, keys } from 'fp-ts/lib/Record';
 import * as t from 'io-ts';
 
-type SupportedType =
-  | t.StringType
-  | t.VoidType
-  | t.ArrayType<any>
-  | t.BooleanType
-  | t.ExactType<any>
-  | t.KeyofType<any>
-  | t.NullType
-  | t.TupleType<Array<t.Any>>
+interface ArrayType extends t.ArrayType<HasArbitrary> {}
+interface RecordType extends t.DictionaryType<t.StringType, HasArbitrary> {}
+interface StructType extends t.InterfaceType<Record<string, t.TypeOf<HasArbitrary>>> {}
+interface ExactType extends t.ExactType<HasArbitrary> {}
+interface TupleType extends t.TupleType<Array<HasArbitrary>> {}
+interface PartialType extends t.PartialType<Record<string, HasArbitrary>> {}
+interface UnionType extends t.UnionType<Array<HasArbitrary>> {}
+interface IntersectionType extends t.IntersectionType<Array<HasArbitrary>> {}
+interface BrandedType extends t.RefinementType<HasArbitrary> {}
+
+export type HasArbitrary =
   | t.UnknownType
   | t.UndefinedType
-  | t.LiteralType<string | number | boolean>
+  | t.NullType
+  | t.VoidType
+  | t.StringType
   | t.NumberType
-  | t.InterfaceType<unknown>
-  | t.PartialType<unknown>
-  | t.UnionType<Array<any>>
-  | t.RefinementType<t.Any>
-  | t.IntersectionType<Array<t.Any>>;
+  | t.BooleanType
+  | t.KeyofType<any>
+  | t.LiteralType<any>
+  | ArrayType
+  | RecordType
+  | StructType
+  | ExactType
+  | PartialType
+  | TupleType
+  | UnionType
+  | IntersectionType
+  | BrandedType;
+
+function getProps(codec: t.InterfaceType<any> | t.ExactType<any> | t.PartialType<any>): t.Props {
+  switch (codec._tag) {
+    case 'InterfaceType':
+    case 'PartialType':
+      return codec.props;
+    case 'ExactType':
+      return getProps(codec.type);
+  }
+}
 
 const objectTypes = ['ExactType', 'InterfaceType', 'PartialType'];
 
-export function getArbitrary<T extends t.Any>(
-  codec: T,
-  customArbitrary?: <C extends t.Any>(codec: C) => O.Option<fc.Arbitrary<C['_A']>>
-): fc.Arbitrary<T['_A']> {
-  return pipe(
-    O.fromNullable(customArbitrary),
-    O.chain(ca => ca(codec)),
-    O.getOrElse(() => {
-      const type: SupportedType = codec as any;
-      switch (type._tag) {
-        case 'StringType':
-          return fc.string();
-        case 'UndefinedType':
-          return fc.constant(undefined);
-        case 'NumberType':
-          return fc.float();
-        case 'BooleanType':
-          return fc.boolean();
-        case 'LiteralType':
-          return fc.constant(type.value);
-        case 'InterfaceType':
-          return fc.record(R.record.map(type.props as Record<string, T>, prop => getArbitrary(prop, customArbitrary)));
-        case 'PartialType':
-          return fc.record(
-            R.record.map(type.props as Record<string, SupportedType>, type =>
-              getArbitrary(t.union([t.undefined, type]), customArbitrary)
-            )
-          );
-        case 'UnionType':
-          return fc.oneof(...type.types.map(t => getArbitrary(t, customArbitrary)));
-        case 'KeyofType':
-          return fc.oneof(...Object.keys(type.keys).map(fc.constant));
-        case 'NullType':
-          return fc.constant(null);
-        case 'TupleType':
-          return (fc.tuple as any)(...type.types.map(t => getArbitrary(t, customArbitrary)));
-        case 'UnknownType':
-          return fc.anything();
-        case 'VoidType':
-          return fc.constant(undefined);
-        case 'ArrayType':
-          return fc.array(getArbitrary(type.type, customArbitrary));
-        case 'ExactType':
-          return getArbitrary(type.type, customArbitrary);
-        case 'RefinementType':
-          return getArbitrary(type.type, customArbitrary).filter(type.predicate);
-        case 'IntersectionType':
-          const isObjectIntersection = objectTypes.includes((type.types[0] as any)._tag as SupportedType['_tag']);
-          return isObjectIntersection
-            ? (fc.tuple as any)(...type.types.map(t => getArbitrary(t, customArbitrary)))
-                .map((values: Array<object>) => Object.assign({}, ...values))
-                .filter(type.is)
-            : fc.oneof(...type.types.map(t => getArbitrary(t, customArbitrary))).filter(type.is);
-      }
-
-      throw new Error(`Codec not supported: ${codec}`);
-    })
-  );
+export function getArbitrary<T extends HasArbitrary>(codec: T): fc.Arbitrary<t.TypeOf<T>> {
+  const type: HasArbitrary = codec as any;
+  switch (type._tag) {
+    case 'UnknownType':
+      return fc.anything();
+    case 'UndefinedType':
+    case 'VoidType':
+      return fc.constant(undefined) as any;
+    case 'NullType':
+      return fc.constant(null) as any;
+    case 'StringType':
+      return fc.string() as any;
+    case 'NumberType':
+      return fc.float() as any;
+    case 'BooleanType':
+      return fc.boolean() as any;
+    case 'KeyofType':
+      return fc.oneof(...keys(type.keys).map(fc.constant)) as any;
+    case 'LiteralType':
+      return fc.constant(type.value);
+    case 'ArrayType':
+      return fc.array(getArbitrary(type.type)) as any;
+    case 'DictionaryType':
+      return fc.dictionary(getArbitrary(type.domain), getArbitrary(type.codomain)) as any;
+    case 'InterfaceType':
+    case 'PartialType':
+    case 'ExactType':
+      return fc.record(record.map(getProps(type), getArbitrary as any) as any) as any;
+    case 'TupleType':
+      return (fc.tuple as any)(...type.types.map(getArbitrary));
+    case 'UnionType':
+      return fc.oneof(...type.types.map(getArbitrary)) as any;
+    case 'IntersectionType':
+      const isObjectIntersection = objectTypes.includes(type.types[0]._tag);
+      return isObjectIntersection
+        ? (fc.tuple as any)(...type.types.map(t => getArbitrary(t)))
+            .map((values: Array<object>) => Object.assign({}, ...values))
+            .filter(type.is)
+        : fc.oneof(...type.types.map(t => getArbitrary(t))).filter(type.is);
+    case 'RefinementType':
+      return getArbitrary(type.type).filter(type.predicate) as any;
+  }
 }
