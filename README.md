@@ -24,3 +24,8 @@ const userArb = getArbitrary(User);
 
 console.log(fc.sample(userArb, 1)[0]); // { name: '', status: 'inactive', handle: 'M.y?>A/' }
 ```
+
+## Known issues
+
+- only supports predefined `io-ts` codecs, not custom types e.g. `DateFromISOString` from `io-ts-types`
+- `getArbitrary(t.keyof({ ... }))` is currently marked as error by TS, even though the codec is supported in the implementation
