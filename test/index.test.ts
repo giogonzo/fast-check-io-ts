@@ -1,10 +1,14 @@
 import * as fc from 'fast-check';
 import * as t from 'io-ts';
 import { getArbitrary, HasArbitrary } from '../src';
+import { date } from 'io-ts-types/lib/date';
+
+// pass
+const overrides = { Date: fc.date() };
 
 function test<T extends HasArbitrary>(codec: T): void {
   it(codec.name, () => {
-    fc.assert(fc.property(getArbitrary(codec), codec.is));
+    fc.assert(fc.property(getArbitrary(codec, overrides), codec.is));
   });
 }
 
@@ -27,3 +31,4 @@ test(t.intersection([t.type({ foo: t.string }), t.partial({ bar: t.number })]));
 test(t.intersection([t.type({ foo: t.string }), t.type({ bar: t.number })]));
 test(t.intersection([t.array(t.string), t.array(t.number)]));
 test(t.record(t.string, t.number));
+test(t.type({ date }));

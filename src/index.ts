@@ -32,6 +32,10 @@ export type HasArbitrary =
   | IntersectionType
   | BrandedType;
 
+interface Overrides {
+  [key: string]: fc.Arbitrary<any>;
+}
+
 function getProps(codec: t.InterfaceType<any> | t.ExactType<any> | t.PartialType<any>): t.Props {
   switch (codec._tag) {
     case 'InterfaceType':
@@ -44,11 +48,11 @@ function getProps(codec: t.InterfaceType<any> | t.ExactType<any> | t.PartialType
 
 const objectTypes = ['ExactType', 'InterfaceType', 'PartialType'];
 
-export function getArbitrary<T extends HasArbitrary>(codec: T): fc.Arbitrary<t.TypeOf<T>> {
+export function getArbitrary<T extends HasArbitrary>(codec: T, overrides: Overrides = {}): fc.Arbitrary<t.TypeOf<T>> {
   const type: HasArbitrary = codec as any;
   switch (type._tag) {
     case 'UnknownType':
-      return fc.anything();
+      return fc.anything() as any;
     case 'UndefinedType':
     case 'VoidType':
       return fc.constant(undefined) as any;
@@ -71,19 +75,28 @@ export function getArbitrary<T extends HasArbitrary>(codec: T): fc.Arbitrary<t.T
     case 'InterfaceType':
     case 'PartialType':
     case 'ExactType':
-      return fc.record(record.map(getProps(type), getArbitrary as any) as any) as any;
+      return fc.record(record.map(getProps(type), codec => getArbitrary(codec as any, overrides)) as any) as any;
     case 'TupleType':
-      return (fc.tuple as any)(...type.types.map(getArbitrary));
+      return (fc.tuple as any)(...type.types.map(codec => getArbitrary(codec, overrides)));
     case 'UnionType':
-      return fc.oneof(...type.types.map(getArbitrary)) as any;
+      return fc.oneof(...type.types.map(codec => getArbitrary(codec, overrides))) as any;
     case 'IntersectionType':
       const isObjectIntersection = objectTypes.includes(type.types[0]._tag);
       return isObjectIntersection
-        ? (fc.tuple as any)(...type.types.map(t => getArbitrary(t)))
+        ? (fc.tuple as any)(...type.types.map(t => getArbitrary(t, overrides)))
             .map((values: Array<object>) => Object.assign({}, ...values))
             .filter(type.is)
-        : fc.oneof(...type.types.map(t => getArbitrary(t))).filter(type.is);
+        : fc.oneof(...type.types.map(t => getArbitrary(t, overrides))).filter(type.is);
     case 'RefinementType':
       return getArbitrary(type.type).filter(type.predicate) as any;
+    default:
+      // if we cannot find the type, check whether it has been passed as an
+      // override and use that instead
+      const typeName = (type as any).name;
+      if (typeName && overrides[typeName] !== undefined) {
+        return overrides[typeName];
+      }
+      // failing that, throw an error?
+      throw Error(`Could not create an Arbitrary for ${typeName}. Consider passing in a custom override?`);
   }
 }
