@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 
 interface ArrayType extends t.ArrayType<HasArbitrary> {}
 interface RecordType extends t.DictionaryType<t.StringType, HasArbitrary> {}
-interface StructType extends t.InterfaceType<Record<string, t.TypeOf<HasArbitrary>>> {}
+interface StructType extends t.InterfaceType<{ [K: string]: t.TypeOf<HasArbitrary> }> {}
 interface ExactType extends t.ExactType<HasArbitrary> {}
 interface TupleType extends t.TupleType<Array<HasArbitrary>> {}
 interface PartialType extends t.PartialType<Record<string, HasArbitrary>> {}
@@ -48,7 +48,7 @@ export function getArbitrary<T extends HasArbitrary>(codec: T): fc.Arbitrary<t.T
   const type: HasArbitrary = codec as any;
   switch (type._tag) {
     case 'UnknownType':
-      return fc.anything();
+      return fc.anything() as any;
     case 'UndefinedType':
     case 'VoidType':
       return fc.constant(undefined) as any;
